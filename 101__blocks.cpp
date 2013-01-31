@@ -13,6 +13,7 @@ public:
     , m_stacks (size)
   {
     for(size_t i=0; i<size; ++i) {
+      m_stacks[i].reserve(size);
       m_stacks[i].push_back(i);
       m_locs[i] = i;
     }
