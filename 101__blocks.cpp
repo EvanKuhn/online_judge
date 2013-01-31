@@ -18,6 +18,18 @@ public:
     }
   }
 
+  // Print the block world state
+  void print() {
+    for(size_t i=0; i<m_size; ++i) {
+      cout << i << ':';
+      const vector<int>& blocks = m_stacks[i];
+      for(size_t b=0; b<blocks.size(); ++b) {
+        cout << ' ' << blocks[b];
+      }
+      cout << endl;
+    }
+  }
+
   // Parse the input command and run the proper command function
   // - Ignore command if it specifies the same block twice, or two blocks on
   //   the same stack.
@@ -25,43 +37,87 @@ public:
     if(a == b) return;
     if(m_locs[a] == m_locs[b]) return;
     if(cmd == "move") {
-      if     (desc == "over") move_over(a, b);
-      else if(desc == "onto") move_onto(a, b);
+      if     (desc == "onto") move_onto(a, b);
+      else if(desc == "over") move_over(a, b);
     }
     else if(cmd == "pile") {
-      if     (desc == "over") pile_over(a, b);
-      else if(desc == "onto") pile_onto(a, b);
+      if     (desc == "onto") pile_onto(a, b);
+      else if(desc == "over") pile_over(a, b);
     }
   }
 
-  void move_over(int a, int b) {
-    cout << "move " << a << " over " << b << endl;
-  }
- 
   void move_onto(int a, int b) {
-    cout << "move " << a << " onto " << b << endl;
+    //cout << "move " << a << " onto " << b << endl;
+    uncover(a);
+    uncover(b);
+    move_top(loc(a), loc(b));
   }
  
-  void pile_over(int a, int b) {
-    cout << "pile " << a << " over " << b << endl;
+  void move_over(int a, int b) {
+    //cout << "move " << a << " over " << b << endl;
+    uncover(a);
+    move_top(loc(a), loc(b));
   }
  
   void pile_onto(int a, int b) {
-    cout << "pile " << a << " onto " << b << endl;
+    //cout << "pile " << a << " onto " << b << endl;
+    uncover(b);
+    move_pile(a, loc(b));
   }
 
-  // Print the block world state
-  void print() {
-    for(size_t i=0; i<m_size; ++i) {
-      cout << i << ':';
-      const vector<int>& blocks = m_stacks[i];
-      for(size_t b=0; b<blocks.size(); ++b) {
-        cout << ' ' << blocks[b] << endl;
-      }
+  void pile_over(int a, int b) {
+    //cout << "pile " << a << " over " << b << endl;
+    move_pile(a, loc(b)); 
+  }
+ 
+private:
+  // Get the location (stack index) for the given block number
+  size_t loc(int blocknum) {
+    return m_locs[blocknum];
+  }
+
+  // Uncover a block by moving all blocks on top of it back to their initial 
+  // stacks.
+  void uncover(int blocknum) {
+    vector<int>& s = m_stacks[loc(blocknum)];
+    while(!s.empty() && s.back() != blocknum) {
+      const int top = s.back();
+      s.pop_back();
+      m_stacks[top].push_back(top);
+      m_locs[top] = top;
     }
   }
 
-private:
+  // Given two stack locations, move the top block from stack A onto stack B
+  void move_top(size_t from_loc, size_t to_loc) {
+    vector<int>& from = m_stacks[from_loc];
+    vector<int>& to   = m_stacks[to_loc];
+    if(from.empty()) return;
+    const int block = from.back();
+    from.pop_back();
+    to.push_back(block);
+    m_locs[block] = to_loc;
+  }
+
+  // Given a block number, move that block and all blocks on top of it to the
+  // target location
+  void move_pile(int from_block, size_t to_loc) {
+    vector<int>& from = m_stacks[loc(from_block)];
+    vector<int>& to   = m_stacks[to_loc];
+    // Find index of block
+    size_t index = 0;
+    for( ; from[index] != from_block; ++index) { }
+    // Copy each block in pile to new stack
+    for(size_t i=index; i<from.size(); ++i) {
+      const int block = from[i];
+      to.push_back(block);
+      m_locs[block] = to_loc;
+    }
+    // Remove pile from old stack
+    from.resize(index);
+  }
+
+  // Data
   size_t               m_size;
   vector<vector<int> > m_stacks;
   map<int,int>         m_locs;
@@ -83,13 +139,9 @@ int main(int argc, char** argv) {
     b    = read_int();
     world.parse(cmd, a, desc, b);
   }
-
   world.print();
-
   return 0;
 }
-
-
 
 
 /*
@@ -107,7 +159,7 @@ int main(int argc, char** argv) {
     if(string(cmd) == "quit") break;
     world.parse(cmd, a, desc, b);
   }
-
+  world.print();
   return 0;
 }
 */
