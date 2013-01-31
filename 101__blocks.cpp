@@ -9,13 +9,21 @@ using namespace std;
 class BlockWorld {
 public:
   explicit BlockWorld(size_t size) 
-    : m_stacks(size)
+    : m_size   (size)
+    , m_stacks (size)
   {
-    cout << "Block world has size " << size << endl;
+    for(size_t i=0; i<size; ++i) {
+      m_stacks[i].push_back(i);
+      m_locs[i] = i;
+    }
   }
 
+  // Parse the input command and run the proper command function
+  // - Ignore command if it specifies the same block twice, or two blocks on
+  //   the same stack.
   void parse(const string& cmd, int a, const string& desc, int b) {
     if(a == b) return;
+    if(m_locs[a] == m_locs[b]) return;
     if(cmd == "move") {
       if     (desc == "over") move_over(a, b);
       else if(desc == "onto") move_onto(a, b);
@@ -42,8 +50,21 @@ public:
     cout << "pile " << a << " onto " << b << endl;
   }
 
+  // Print the block world state
+  void print() {
+    for(size_t i=0; i<m_size; ++i) {
+      cout << i << ':';
+      const vector<int>& blocks = m_stacks[i];
+      for(size_t b=0; b<blocks.size(); ++b) {
+        cout << ' ' << blocks[b] << endl;
+      }
+    }
+  }
+
 private:
+  size_t               m_size;
   vector<vector<int> > m_stacks;
+  map<int,int>         m_locs;
 };
 
 // Helper functions
@@ -62,6 +83,8 @@ int main(int argc, char** argv) {
     b    = read_int();
     world.parse(cmd, a, desc, b);
   }
+
+  world.print();
 
   return 0;
 }
