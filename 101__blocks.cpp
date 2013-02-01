@@ -124,43 +124,18 @@ private:
   map<int,int>         m_locs;
 };
 
-// Helper functions
-int    read_int() { int x=0; cin >> x; return x; }
-string read_str() { string x; cin >> x; return x; }
-
 // Run the program by reading from stdin and passing data to the BlockWorld
 int main(int argc, char** argv) {
-  int a, b;
+  int a, b, size;
   string cmd, desc;
-  BlockWorld world(read_int());
-
-  while((cmd = read_str()) != "quit") {
-    a    = read_int();
-    desc = read_str();
-    b    = read_int();
-    world.parse(cmd, a, desc, b);
-  }
-  world.print();
-  return 0;
-}
-
-
-/*
-// A more C-style main function
-int main(int argc, char** argv) {
-  size_t size;
-  int a, b;
-  char cmd[5] = {0};
-  char desc[5] = {0};
-
   cin >> size;
   BlockWorld world(size);
 
-  while(scanf("%s %d %s %d\n", cmd, &a, desc, &b) > 0) {
-    if(string(cmd) == "quit") break;
+  for(cin >> cmd; cmd != "quit"; cin >> cmd) {
+    cin >> a >> desc >> b;
     world.parse(cmd, a, desc, b);
   }
   world.print();
   return 0;
 }
-*/
+
