@@ -37,6 +37,40 @@ public:
   size_t num;
 };
 
+// Memoized results for which boxes fit in which other boxes. Reduces run time
+// by only ~10%. Alternatively you can just just use Box::fits_in() directly.
+class BoxFitTable {
+public:
+  // Initialize the table given a sorted set of boxes
+  void initialize(const vector<Box>& boxes) {
+    m_table.clear();
+    const size_t nboxes = boxes.size();
+    m_table.resize(nboxes);
+    for(size_t i=0; i<nboxes; ++i) {
+      m_table[i].resize(nboxes, false);
+    }
+    for(size_t larger=0; larger<nboxes-1; ++larger) {
+      for(size_t smaller=larger+1; smaller<nboxes; ++smaller) {
+        const Box& smaller_box = boxes[smaller];
+        const Box& larger_box = boxes[larger];
+        if(smaller_box.fits_in(larger_box)) {
+          m_table[smaller_box.num][larger_box.num] = true;
+        }
+      }
+    }
+  }
+
+  // Check if the smaller box fits in the larger box
+  bool fits(const Box& smaller, const Box& larger) const {
+    return m_table[smaller.num][larger.num];
+  }
+
+private:
+  vector<vector<bool> > m_table;
+};
+
+BoxFitTable fit_table;
+
 // Helper function find the longest sequence of boxes that fit in one another.
 //
 // Params:
@@ -66,7 +100,7 @@ void longest(vector<size_t>& seq,
   }
   // Index of last box: check if it fits in the bounding box
   else if(index+1 == nboxes) {
-    if(!bound || boxes[index].fits_in(*bound)) {
+    if(!bound || fit_table.fits(boxes[index], *bound)) {
       seq.push_back(boxes[index].num);
     }
     return;
@@ -84,7 +118,7 @@ void longest(vector<size_t>& seq,
     // Find the index of the next box that fits in the bounding box.
     // Get the longest sequence starting with that box.
     size_t f=index;
-    while(f<nboxes && bound && !boxes[f].fits_in(*bound)) {
+    while(f<nboxes && bound && !fit_table.fits(boxes[f], *bound)) {
       ++f;
     }
     if(f < nboxes) {
@@ -119,6 +153,9 @@ int main(int argc, char** argv) {
       boxes[i].num = i;
     }
     sort(boxes.rbegin(), boxes.rend());
+
+    // Initialize fit table
+    fit_table.initialize(boxes);
 
     // Find longest sequence and print it
     vector<size_t> seq;
