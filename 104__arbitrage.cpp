@@ -25,7 +25,7 @@ void init_rates_table() {
 bool search(double curval, 
             vector<size_t>& path, 
             vector<bool>&   used, 
-            vector<size_t>& solution)
+            vector<size_t>& soln)
 {
   //cout << "Curval=" << curval << "  Path[" << path.size() << "]:";
   //for(size_t i=0; i<path.size(); ++i) {
@@ -48,8 +48,8 @@ bool search(double curval,
       double val = curval * rates[path.back()][ccy] * rates[ccy][path.front()];
       if(val > 1.01) {
         //cout << "Found possible solution with currency " << ccy << " value " << val << endl;
-        solution = path;
-        solution.push_back(ccy);
+        soln = path;
+        soln.push_back(ccy);
         return true;
       }
     }
@@ -74,7 +74,7 @@ bool search(double curval,
     double newval = curval * rates[path.back()][ccy];
     if(search(newval, path, used, temp)) {
       if(optimal.empty() || temp.size() < optimal.size()) {
-        optimal = temp;
+        optimal.swap(temp);
       }
     }
 
@@ -85,7 +85,7 @@ bool search(double curval,
   
   // If we found a solution, return it!
   if(!optimal.empty()) {
-    optimal.swap(solution);
+    optimal.swap(soln);
     return true;
   }
   return false;
@@ -95,17 +95,20 @@ bool search(double curval,
 void find_arbitrage() {
   vector<size_t> path;
   vector<bool>   used(MAXDIM, false);
-  vector<size_t> solution;
+  vector<size_t> soln;
+
+  path.reserve(MAXDIM);
+  soln.reserve(MAXDIM);
 
   // Search for a solution
-  const bool success = search(1.0, path, used, solution);
+  const bool success = search(1.0, path, used, soln);
 
   // Print results
   if(success) {
-    for(size_t i=0; i<solution.size(); ++i) {
-      cout << (solution[i] + 1) << ' ';
+    for(size_t i=0; i<soln.size(); ++i) {
+      cout << (soln[i] + 1) << ' ';
     }
-    cout << (solution.front() + 1) << endl;
+    cout << (soln.front() + 1) << endl;
   }
   else {
     cout << "no arbitrage sequence exists" << endl;
