@@ -22,48 +22,93 @@ void init_rates_table() {
 }
 
 // The meat!
-void solve(vector<size_t>& convs, double curval) {
-  const size_t first_ccy = convs.front();
-  const size_t curr_ccy = convs.back();
+bool search(double curval, 
+            vector<size_t>& path, 
+            vector<bool>&   used, 
+            vector<size_t>& solution)
+{
+  //cout << "Curval=" << curval << "  Path[" << path.size() << "]:";
+  //for(size_t i=0; i<path.size(); ++i) {
+  //  cout << ' ' << path[i];
+  //}
+  //cout << endl;
 
-  // Choose next currency
-  for(size_t next_ccy=0; next_ccy<dims; ++next_ccy) {
-    if(next_ccy == first_ccy) continue;
-    if(next_ccy == curr_ccy) continue;
-    convs.push_back(next_ccy);
-    
-    // Check if converting to the next currency and back to the first will
-    // result in a gain of > 1%
-    double val = curval * rates[curr_ccy][next_ccy] * rates[next_ccy][first_ccy];
-    if(val > 1.01) {
-      return;
+  
+  // Check for arbitrage by making one more conversion before converting back to
+  // the first currency
+  if(!path.empty()) {
+    for(size_t ccy=0; ccy<dims; ++ccy) {
+      // Skip if equal to first or last currency
+      if(used[ccy]) continue;
+
+      //cout << "rate " << path.back() << " to " << ccy << " = " << rates[path.back()][ccy] << endl;
+      //cout << "rate " << ccy << " to " << path.front() << " = " << rates[ccy][path.front()] << endl;
+
+      // Check for arbitrage
+      double val = curval * rates[path.back()][ccy] * rates[ccy][path.front()];
+      if(val > 1.01) {
+        //cout << "Found possible solution with currency " << ccy << " value " << val << endl;
+        solution = path;
+        solution.push_back(ccy);
+        return true;
+      }
+    }
+  }
+
+  // Check if we reached max depth
+  if(path.size() >= dims-1) return false;
+
+  // Temporarily and optimal solutions
+  vector<size_t> temp, optimal;
+
+  // We didn't find an arbitrage opportunity, so search deeper
+  for(size_t ccy=0; ccy<dims; ++ccy) {
+    // Skip if equal to first or last currency
+    if(used[ccy]) continue;
+
+    // Add to conversion path
+    path.push_back(ccy);
+    used[ccy] = true;
+
+    // Recurse and save optimal solution
+    double newval = curval * rates[path.back()][ccy];
+    if(search(newval, path, used, temp)) {
+      if(optimal.empty() || temp.size() < optimal.size()) {
+        optimal = temp;
+      }
     }
 
+    // Remove currency before iterating
+    path.pop_back();
+    used[ccy] = false;
   }
+  
+  // If we found a solution, return it!
+  if(!optimal.empty()) {
+    optimal.swap(solution);
+    return true;
+  }
+  return false;
 }
 
 // Find and print arbitrage opportunities
 void find_arbitrage() {
-  // Array of conversions
-  vector<size_t> min_convs;
-  
-  // Actually look for arbitrage
-  for(size_t ccy=0; ccy<dims; ++ccy) {
-    vector<size_t> convs(1, ccy);
-    convs.reserve(MAXDIM);
-    solve(convs, ccy);
-    if(convs
-  }
-  
+  vector<size_t> path;
+  vector<bool>   used(MAXDIM, false);
+  vector<size_t> solution;
+
+  // Search for a solution
+  const bool success = search(1.0, path, used, solution);
+
   // Print results
-  if(convs.empty()) {
-    cout << "no arbitrage sequence exists" << endl;
+  if(success) {
+    for(size_t i=0; i<solution.size(); ++i) {
+      cout << (solution[i] + 1) << ' ';
+    }
+    cout << (solution.front() + 1) << endl;
   }
   else {
-    for(size_t i=0; i<convs.size(); ++i) {
-      cout << (convs[i] + 1) << ' ';
-    }
-    cout << convs.front() << endl;
+    cout << "no arbitrage sequence exists" << endl;
   }
 }
 
@@ -77,3 +122,4 @@ int main(int argc, char** argv) {
   }
   return 0;
 }
+
